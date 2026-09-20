@@ -1,0 +1,12 @@
+diff --git a/src/utils/Player.js b/src/utils/Player.js
+index a0073ec..3f5826b 100644
+--- a/src/utils/Player.js
++++ b/src/utils/Player.js
+@@ -1,3 +1,7 @@
++// CDN proxy helper
++const cdnProxy = url =>
++  url ? `http://localhost:3001/${encodeURIComponent(url)}` : url;
++
+ import { getAlbum } from '@/api/album';
+ import { getArtist } from '@/api/artist';
+ import { trackScrobble, trackUpdateNowPlaying } from '@/api/lastfm';

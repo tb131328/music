@@ -1,0 +1,17 @@
+{
+  "name": "music-dev",
+  "image": "mcr.microsoft.com/devcontainers/universal:2-linux",
+
+  // 端口：3000 = NeteaseCloudMusicApi，3001 = cdn-proxy，8080 = vue-cli serve
+  "forwardPorts": [3000, 3001, 8080],
+  "portsAttributes": {
+    "3000": { "label": "Netease API", "onAutoForward": "silent" },
+    "3001": { "label": "CDN Proxy", "onAutoForward": "silent" },
+    "8080": { "label": "YesPlayMusic", "onAutoForward": "openBrowser" }
+  },
+
+  // 创建容器后自动恢复环境：切 node 16、克隆 ym、装依赖、应用备份改动
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "remoteUser": "codespace"
+}
