@@ -1,12 +1,31 @@
-diff --git a/src/utils/Player.js b/src/utils/Player.js
-index a0073ec..3f5826b 100644
 --- a/src/utils/Player.js
 +++ b/src/utils/Player.js
-@@ -1,3 +1,7 @@
-+// CDN proxy helper
+@@ -1,4 +1,9 @@
++// CDN proxy helper - 所有音乐URL通过本地代理转发
 +const cdnProxy = url =>
 +  url ? `http://localhost:3001/${encodeURIComponent(url)}` : url;
 +
  import { getAlbum } from '@/api/album';
  import { getArtist } from '@/api/artist';
  import { trackScrobble, trackUpdateNowPlaying } from '@/api/lastfm';
+ import { fmTrash, personalFM } from '@/api/others';
+@@ -398,6 +403,7 @@
+       return getMP3(track.id).then(result => {
+         if (!result.data[0]) return null;
+         if (!result.data[0].url) return null;
+         if (result.data[0].freeTrialInfo !== null) return null; // 跳过只能试听的歌曲
+-        const source = result.data[0].url.replace(/^http:/, 'https:');
++        let source = result.data[0].url.replace(/^http:/, 'https:');
++        source = cdnProxy(source); // 通过本地CDN代理转发
+         if (store.state.settings.automaticallyCacheSongs) {
+           cacheTrackSource(track, source, result.data[0].br);
+@@ -475,7 +481,7 @@
+       return null;
+     }
+ 
+     if (retrieveSongInfo.source !== 'bilibili') {
+-      return retrieveSongInfo.url;
++      return cdnProxy(retrieveSongInfo.url); // 第三方音源也通过代理
+     }
+ 
+     const buffer = base642Buffer(retrieveSongInfo.url);
