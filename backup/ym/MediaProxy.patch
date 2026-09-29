@@ -1,0 +1,351 @@
+diff --git a/src/components/CoverRow.vue b/src/components/CoverRow.vue
+index 76c1e1b..26ae93a 100644
+--- a/src/components/CoverRow.vue
++++ b/src/components/CoverRow.vue
+@@ -40,6 +40,7 @@
+ <script>
+ import Cover from '@/components/Cover.vue';
+ import ExplicitSymbol from '@/components/ExplicitSymbol.vue';
++import cdnProxy from '@/utils/cdnProxy';
+ 
+ export default {
+   name: 'CoverRow',
+@@ -107,11 +108,15 @@ export default {
+         img1v1ID = img1v1ID[img1v1ID.length - 1];
+         if (img1v1ID === '5639395138885805.jpg') {
+           // 没有头像的歌手，网易云返回的img1v1Url并不是正方形的 😅😅😅
+-          return 'https://p2.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg?param=512y512';
++          return cdnProxy(
++            'https://p2.music.126.net/VnZiScyynLG7atLIZ2YPkw==/18686200114669622.jpg?param=512y512'
++          );
+         }
+       }
+       let img = item.img1v1Url || item.picUrl || item.coverImgUrl;
+-      return `${img?.replace('http://', 'https://')}?param=512y512`;
++      return img
++        ? cdnProxy(`${img.replace('http://', 'https://')}?param=512y512`)
++        : '';
+     },
+   },
+ };
+diff --git a/src/components/DailyTracksCard.vue b/src/components/DailyTracksCard.vue
+index 9b2bdb9..3ada73d 100644
+--- a/src/components/DailyTracksCard.vue
++++ b/src/components/DailyTracksCard.vue
+@@ -22,6 +22,7 @@ import locale from '@/locale';
+ import { mapMutations, mapState, mapActions } from 'vuex';
+ import { dailyRecommendTracks } from '@/api/playlist';
+ import { isAccountLoggedIn } from '@/utils/auth';
++import cdnProxy from '@/utils/cdnProxy';
+ import sample from 'lodash/sample';
+ 
+ const defaultCovers = [
+@@ -38,9 +39,11 @@ export default {
+   computed: {
+     ...mapState(['dailyTracks']),
+     coverUrl() {
+-      return `${
+-        this.dailyTracks[0]?.al.picUrl || sample(defaultCovers)
+-      }?param=1024y1024`;
++      return cdnProxy(
++        `${
++          this.dailyTracks[0]?.al.picUrl || sample(defaultCovers)
++        }?param=1024y1024`
++      );
+     },
+   },
+   created() {
+diff --git a/src/components/FMCard.vue b/src/components/FMCard.vue
+index 1f0d28b..b4df96b 100644
+--- a/src/components/FMCard.vue
++++ b/src/components/FMCard.vue
+@@ -40,6 +40,7 @@ import ArtistsInLine from '@/components/ArtistsInLine.vue';
+ import { mapState } from 'vuex';
+ import * as Vibrant from 'node-vibrant/dist/vibrant.worker.min.js';
+ import Color from 'color';
++import cdnProxy from '@/utils/cdnProxy';
+ 
+ export default {
+   name: 'FMCard',
+@@ -61,10 +62,10 @@ export default {
+       return this.track.artists || this.track.ar || [];
+     },
+     nextTrackCover() {
+-      return `${this.player._personalFMNextTrack?.album?.picUrl.replace(
+-        'http://',
+-        'https://'
+-      )}?param=512y512`;
++      const picUrl = this.player._personalFMNextTrack?.album?.picUrl;
++      return picUrl
++        ? cdnProxy(`${picUrl.replace('http://', 'https://')}?param=512y512`)
++        : '';
+     },
+   },
+   watch: {
+@@ -92,10 +93,12 @@ export default {
+     },
+     getColor() {
+       if (!this.player.personalFMTrack?.album?.picUrl) return;
+-      const cover = `${this.player.personalFMTrack.album.picUrl.replace(
+-        'http://',
+-        'https://'
+-      )}?param=512y512`;
++      const cover = cdnProxy(
++        `${this.player.personalFMTrack.album.picUrl.replace(
++          'http://',
++          'https://'
++        )}?param=512y512`
++      );
+       Vibrant.from(cover, { colorCount: 1 })
+         .getPalette()
+         .then(palette => {
+diff --git a/src/components/Navbar.vue b/src/components/Navbar.vue
+index dce629b..8b852ad 100644
+--- a/src/components/Navbar.vue
++++ b/src/components/Navbar.vue
+@@ -46,8 +46,8 @@
+         <img
+           class="avatar"
+           :src="avatarUrl"
+-          @click="showUserProfileMenu"
+           loading="lazy"
++          @click="showUserProfileMenu"
+         />
+       </div>
+     </nav>
+@@ -77,6 +77,7 @@
+ <script>
+ import { mapState } from 'vuex';
+ import { isLooseLoggedIn, doLogout } from '@/utils/auth';
++import cdnProxy from '@/utils/cdnProxy';
+ 
+ // import icons for win32 title bar
+ // icons by https://github.com/microsoft/vscode-codicons
+@@ -110,9 +111,11 @@ export default {
+       return isLooseLoggedIn();
+     },
+     avatarUrl() {
+-      return this.data?.user?.avatarUrl && this.isLooseLoggedIn
+-        ? `${this.data?.user?.avatarUrl}?param=512y512`
+-        : 'http://s4.music.126.net/style/web2/img/default/default_avatar.jpg?param=60y60';
++      const avatarUrl =
++        this.data?.user?.avatarUrl && this.isLooseLoggedIn
++          ? `${this.data?.user?.avatarUrl}?param=512y512`
++          : 'http://s4.music.126.net/style/web2/img/default/default_avatar.jpg?param=60y60';
++      return cdnProxy(avatarUrl);
+     },
+     hasCustomTitlebar() {
+       return this.enableWin32Titlebar || this.enableLinuxTitlebar;
+diff --git a/src/components/TrackListItem.vue b/src/components/TrackListItem.vue
+index a3a6238..bbac0b2 100644
+--- a/src/components/TrackListItem.vue
++++ b/src/components/TrackListItem.vue
+@@ -91,6 +91,7 @@ import ArtistsInLine from '@/components/ArtistsInLine.vue';
+ import ExplicitSymbol from '@/components/ExplicitSymbol.vue';
+ import { mapState } from 'vuex';
+ import { isNil } from 'lodash';
++import cdnProxy from '@/utils/cdnProxy';
+ 
+ export default {
+   name: 'TrackListItem',
+@@ -124,7 +125,7 @@ export default {
+         this.track?.al?.picUrl ??
+         this.track?.album?.picUrl ??
+         'https://p2.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg';
+-      return image + '?param=224y224';
++      return cdnProxy(image + '?param=224y224');
+     },
+     artists() {
+       const { ar, artists } = this.track;
+diff --git a/src/utils/Player.js b/src/utils/Player.js
+index a0073ec..966445e 100644
+--- a/src/utils/Player.js
++++ b/src/utils/Player.js
+@@ -8,6 +8,7 @@ import store from '@/store';
+ import { isAccountLoggedIn } from '@/utils/auth';
+ import { cacheTrackSource, getTrackSource } from '@/utils/db';
+ import { isCreateMpris, isCreateTray } from '@/utils/platform';
++import cdnProxy from '@/utils/cdnProxy';
+ import { Howl, Howler } from 'howler';
+ import shuffle from 'lodash/shuffle';
+ import { decode as base642Buffer } from '@/utils/base64';
+@@ -400,8 +401,9 @@ export default class {
+       return getMP3(track.id).then(result => {
+         if (!result.data[0]) return null;
+         if (!result.data[0].url) return null;
+-        if (result.data[0].freeTrialInfo !== null) return null; // 跳过只能试听的歌曲
+-        const source = result.data[0].url.replace(/^http:/, 'https:');
++        if (result.data[0].freeTrialInfo !== null) return null;
++        let source = result.data[0].url.replace(/^http:/, 'https:');
++        source = cdnProxy(source);
+         if (store.state.settings.automaticallyCacheSongs) {
+           cacheTrackSource(track, source, result.data[0].br);
+         }
+@@ -409,10 +411,13 @@ export default class {
+       });
+     } else {
+       return new Promise(resolve => {
+-        resolve(`https://music.163.com/song/media/outer/url?id=${track.id}`);
++        resolve(
++          cdnProxy(`https://music.163.com/song/media/outer/url?id=${track.id}`)
++        );
+       });
+     }
+   }
++
+   async _getAudioSourceFromUnblockMusic(track) {
+     console.debug(`[debug][Player.js] _getAudioSourceFromUnblockMusic`);
+ 
+@@ -466,7 +471,7 @@ export default class {
+       const url =
+         retrieveSongInfo.source === 'bilibili'
+           ? `data:application/octet-stream;base64,${retrieveSongInfo.url}`
+-          : retrieveSongInfo.url;
++          : cdnProxy(retrieveSongInfo.url);
+       cacheTrackSource(track, url, 128000, `unm:${retrieveSongInfo.source}`);
+     }
+ 
+@@ -475,7 +480,7 @@ export default class {
+     }
+ 
+     if (retrieveSongInfo.source !== 'bilibili') {
+-      return retrieveSongInfo.url;
++      return cdnProxy(retrieveSongInfo.url);
+     }
+ 
+     const buffer = base642Buffer(retrieveSongInfo.url);
+@@ -610,12 +615,12 @@ export default class {
+       album: track.al.name,
+       artwork: [
+         {
+-          src: track.al.picUrl + '?param=224y224',
++          src: cdnProxy(track.al.picUrl + '?param=224y224'),
+           type: 'image/jpg',
+           sizes: '224x224',
+         },
+         {
+-          src: track.al.picUrl + '?param=512y512',
++          src: cdnProxy(track.al.picUrl + '?param=512y512'),
+           type: 'image/jpg',
+           sizes: '512x512',
+         },
+diff --git a/src/utils/cdnProxy.js b/src/utils/cdnProxy.js
+new file mode 100644
+index 0000000..4f2d0ac
+--- /dev/null
++++ b/src/utils/cdnProxy.js
+@@ -0,0 +1,27 @@
++function getProxyOrigin() {
++    if (process.env.IS_ELECTRON === true) return 'http://localhost:3001';
++    if (typeof window === 'undefined') return null;
++
++    const { protocol, hostname } = window.location;
++    const forwardedHostname = hostname.replace(
++        /-\d+(?=\.app\.github\.dev$)/,
++        '-3001'
++    );
++
++    if (forwardedHostname !== hostname) {
++        return `${protocol}//${forwardedHostname}`;
++    }
++
++    return `${protocol}//${hostname}:3001`;
++}
++
++export default function cdnProxy(url) {
++    if (!url || typeof url !== 'string' || /^(data|blob):/i.test(url)) {
++        return url;
++    }
++
++    const proxyOrigin = getProxyOrigin();
++    if (!proxyOrigin || url.startsWith(`${proxyOrigin}/`)) return url;
++
++    return `${proxyOrigin}/${encodeURIComponent(url)}`;
++}
+diff --git a/src/utils/db.js b/src/utils/db.js
+index 6920815..0457e45 100644
+--- a/src/utils/db.js
++++ b/src/utils/db.js
+@@ -1,6 +1,7 @@
+ import axios from 'axios';
+ import Dexie from 'dexie';
+ import store from '@/store';
++import cdnProxy from '@/utils/cdnProxy';
+ // import pkg from "../../package.json";
+ 
+ const db = new Dexie('yesplaymusic');
+@@ -101,9 +102,9 @@ export function cacheTrackSource(trackInfo, url, bitRate, from = 'netease') {
+   if (cover.slice(0, 5) !== 'https') {
+     cover = 'https' + cover.slice(4);
+   }
+-  axios.get(`${cover}?param=512y512`);
+-  axios.get(`${cover}?param=224y224`);
+-  axios.get(`${cover}?param=1024y1024`);
++  axios.get(cdnProxy(`${cover}?param=512y512`));
++  axios.get(cdnProxy(`${cover}?param=224y224`));
++  axios.get(cdnProxy(`${cover}?param=1024y1024`));
+   return axios
+     .get(url, {
+       responseType: 'arraybuffer',
+diff --git a/src/utils/filters.js b/src/utils/filters.js
+index 5f3ed82..eacc7f4 100644
+--- a/src/utils/filters.js
++++ b/src/utils/filters.js
+@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
+ import duration from 'dayjs/plugin/duration';
+ import relativeTime from 'dayjs/plugin/relativeTime';
+ import locale from '@/locale';
++import cdnProxy from '@/utils/cdnProxy';
+ 
+ Vue.filter('formatTime', (Milliseconds, format = 'HH:MM:SS') => {
+   if (!Milliseconds) return '';
+@@ -62,11 +63,12 @@ Vue.filter('formatAlbumType', (type, album) => {
+ 
+ Vue.filter('resizeImage', (imgUrl, size = 512) => {
+   if (!imgUrl) return '';
++  if (/^(data|blob):/i.test(imgUrl)) return imgUrl;
+   let httpsImgUrl = imgUrl;
+   if (imgUrl.slice(0, 5) !== 'https') {
+     httpsImgUrl = 'https' + imgUrl.slice(4);
+   }
+-  return `${httpsImgUrl}?param=${size}y${size}`;
++  return cdnProxy(`${httpsImgUrl}?param=${size}y${size}`);
+ });
+ 
+ Vue.filter('formatPlayCount', count => {
+diff --git a/src/views/lyrics.vue b/src/views/lyrics.vue
+index 1e3d957..015850f 100644
+--- a/src/views/lyrics.vue
++++ b/src/views/lyrics.vue
+@@ -313,6 +313,7 @@ import * as Vibrant from 'node-vibrant/dist/vibrant.worker.min.js';
+ import Color from 'color';
+ import { isAccountLoggedIn } from '@/utils/auth';
+ import { hasListSource, getListSourcePath } from '@/utils/playList';
++import cdnProxy from '@/utils/cdnProxy';
+ import locale from '@/locale';
+ 
+ export default {
+@@ -351,10 +352,12 @@ export default {
+       },
+     },
+     imageUrl() {
+-      return this.player.currentTrack?.al?.picUrl + '?param=1024y1024';
++      const picUrl = this.player.currentTrack?.al?.picUrl;
++      return picUrl ? cdnProxy(`${picUrl}?param=1024y1024`) : '';
+     },
+     bgImageUrl() {
+-      return this.player.currentTrack?.al?.picUrl + '?param=512y512';
++      const picUrl = this.player.currentTrack?.al?.picUrl;
++      return picUrl ? cdnProxy(`${picUrl}?param=512y512`) : '';
+     },
+     isShowLyricTypeSwitch() {
+       return this.romalyric.length > 0 && this.tlyric.length > 0;
+@@ -673,7 +676,7 @@ export default {
+     },
+     getCoverColor() {
+       if (this.settings.lyricsBackground !== true) return;
+-      const cover = this.currentTrack.al?.picUrl + '?param=256y256';
++      const cover = cdnProxy(this.currentTrack.al?.picUrl + '?param=256y256');
+       Vibrant.from(cover, { colorCount: 1 })
+         .getPalette()
+         .then(palette => {

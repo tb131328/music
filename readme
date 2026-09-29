@@ -34,6 +34,25 @@ codespa+   20454  111  4.4 1170984 359932 pts/0  Sl   01:30   0:11 /usr/local/sh
 内网听网易云音乐（Codespace 方案）
 内网屏蔽了网易云 CDN，但放行了 GitHub。
 利用 GitHub Codespace 作跳板，把音频/封面请求通过 Codespace 中转，实现正常播放。
+
+给其他人部署
+1. Fork 或直接使用 https://github.com/tb131328/music 创建 Codespace。
+2. Codespace 创建时会自动克隆 YesPlayMusic 的固定基线并应用完整媒体代理补丁。
+3. 创建完成后执行：
+  bash /workspaces/music/start.sh
+4. 在 Ports 面板打开 8080，登录网易云音乐。
+
+补丁基于 YesPlayMusic 提交 df075cca247eab7bf8686155cb8cc9a1f4c7e271，文件在 backup/ym/MediaProxy.patch。若要手动应用到 YesPlayMusic：
+
+```bash
+git clone https://github.com/qier222/YesPlayMusic.git
+cd YesPlayMusic
+git checkout -b codespace-media-proxy df075cca247eab7bf8686155cb8cc9a1f4c7e271
+curl -fL https://raw.githubusercontent.com/tb131328/music/main/backup/ym/MediaProxy.patch -o /tmp/MediaProxy.patch
+git apply --check /tmp/MediaProxy.patch
+git apply /tmp/MediaProxy.patch
+```
+
 架构
 浏览器
   ↓ 访问
